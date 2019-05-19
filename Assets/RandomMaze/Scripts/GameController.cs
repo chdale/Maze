@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour {
 
@@ -21,6 +22,14 @@ public class GameController : MonoBehaviour {
     private MazeCell[,] defaultMazeArray = new MazeCell[20, 20];
     private MazeCell[,] mazeArray;
     private Stack<MazeCell> backtrackStack;
+    private bool stopTime = false;
+    private Text easyText;
+    private Text mediumText;
+    private Text hardText;
+    [SerializeField]
+    private int difficulty;
+
+    private float gameTimer = 0f;
 
     private void Awake()
     {
@@ -29,12 +38,81 @@ public class GameController : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-		
-	}
+        gameTimer = 0f;
+        easyText = GameObject.Find("EasyTime").GetComponent<Text>();
+        mediumText = GameObject.Find("MediumTime").GetComponent<Text>();
+        hardText = GameObject.Find("HardTime").GetComponent<Text>();
+        UpdateHighscores(true);
+        if (GlobalStats.FirstRun)
+        {
+
+            GlobalStats.FirstRun = false;
+        }
+    }
 	
 	// Update is called once per frame
 	void Update () {
+        if (!stopTime)
+        {
+            gameTimer += Time.deltaTime;
+        }
+    }
 
+    public float GetTime()
+    {
+        return gameTimer;
+    }
+
+    public void StopTime()
+    {
+        stopTime = true;
+        UpdateHighscores(false);
+    }
+
+    private void UpdateHighscores(bool levelLoad)
+    {
+        if (levelLoad)
+        {
+            if (GlobalStats.HardSpeed != default(float))
+            {
+                hardText.text = GlobalStats.GetStringRepresentation(GlobalStats.HardSpeed);
+            }
+            if (GlobalStats.MediumSpeed != default(float))
+            {
+                mediumText.text = GlobalStats.GetStringRepresentation(GlobalStats.MediumSpeed);
+            }
+            if (GlobalStats.EasySpeed != default(float))
+            {
+                easyText.text = GlobalStats.GetStringRepresentation(GlobalStats.EasySpeed);
+            }
+        }
+        else
+        {
+            if (mazeRows == 20)
+            {
+                if (GlobalStats.HardSpeed == default(float) || GlobalStats.HardSpeed > gameTimer)
+                {
+                    GlobalStats.HardSpeed = gameTimer;
+                    hardText.text = GlobalStats.GetStringRepresentation(GlobalStats.HardSpeed);
+                }
+            }
+            if (mazeRows == 10)
+            {
+                if (GlobalStats.MediumSpeed == default(float) || GlobalStats.MediumSpeed > gameTimer)
+                {
+                    GlobalStats.MediumSpeed = gameTimer;
+                    mediumText.text = GlobalStats.GetStringRepresentation(GlobalStats.MediumSpeed);
+                }
+            }
+            if (mazeRows == 5)
+            {
+                if (GlobalStats.EasySpeed == default(float) || GlobalStats.EasySpeed > gameTimer)
+                {
+                    GlobalStats.EasySpeed = gameTimer;
+                    easyText.text = GlobalStats.GetStringRepresentation(GlobalStats.EasySpeed);
+                }
+            }
+        }
     }
 
     private void GenerateMaze()
@@ -246,7 +324,15 @@ public class GameController : MonoBehaviour {
         {
             for (int j = 0; j < mazeArray.GetLength(1); j++)
             {
-                var mazeSegment = mapObjects[mazeArray[i, j].directionalId];
+                GameObject mazeSegment = null; 
+                if (i == customEndPoint[0] && j == customEndPoint[1])
+                {
+                    mazeSegment = mapObjects[MazeCell.ExitCellConvert(mazeArray[i, j])];
+                }
+                else
+                {
+                    mazeSegment = mapObjects[mazeArray[i, j].directionalId];
+                }
 
                 if (hideCeiling)
                 {
@@ -258,11 +344,7 @@ public class GameController : MonoBehaviour {
                 }
 
                 var segment = Instantiate(mazeSegment, new Vector3(i * modularSize, 0, j * modularSize), Quaternion.identity);
-                if (i == customEndPoint[0] && j == customEndPoint[1])
-                {
-                    // Generate treasure at end
-                    Instantiate(treasureObject, new Vector3((customEndPoint[0] * modularSize), treasureObject.transform.localScale.y / 2, (customEndPoint[1] * modularSize) + modularSize / 2), Quaternion.identity, segment.transform);
-                }
+
                 if (IsPossibleKeyLocation(i,j))
                 {
                     possibleKeyLocations.Add(mazeArray[i, j]);
@@ -297,4 +379,11 @@ public class GameController : MonoBehaviour {
             return false;
         }
     }
+}
+
+public enum Difficulty
+{
+    Easy = 0,
+    Medium = 1,
+    Hard = 2
 }

@@ -84,4 +84,19 @@ public class MazeCell
             directionalId = 0;
         }
     }
+
+    public static int ExitCellConvert(MazeCell cell)
+    {
+        switch (cell.directionalId)
+        {
+            case 0:
+                return 8;
+            case 3:
+                return 4;
+            case 7:
+                return 12;
+            default:
+                return 12;
+        }
+    }
 }
